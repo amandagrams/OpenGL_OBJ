@@ -3,7 +3,7 @@
 **Trabalho GA - Amanda Gramns e Paula Knob**
 
 
-**Controles Teclado**
+**Controles Teclado**  
 ESC: Fecha janela  
 F1: altera entre exibição da malha (polígonos sem preenchimento) e com textura.  
 W: movimenta câmera no eixo Z para frente  
