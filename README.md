@@ -1,27 +1,17 @@
 # OpenGL_OBJ 
+Trabalho GA - Amanda Gramns e Paula Knob
 
-Visualização controlada apor teclado e mouse.
 
-Controles:
-
+=== Controles Teclado ===
 ESC: Fecha janela
-
-A: Rotação do objeto no eixo Y para a esquerda
-D: Rotação do objeto no eixo Y para a direita
-W: Rotação do objeto no eixo X para cima
-S: Rotação do objeto no eixo X para baixo
-E: Rotação do objeto no eixo Z sentido horário
-Z: Rotação do objeto no eixo Z sentido anti-horário
-
-Mouse
-Scroll : Escala objeto (-) ou (-)
+F1: altera entre exibiÃ§Ã£o da malha (polÃ­gonos sem preenchimento) e com textura.
+W: movimenta cÃ¢mera no eixo Z para frente
+S: movimenta cÃ¢mera no eixo Z para trÃ¡s
+A: movimenta cÃ¢mera no eixo X para esquerda
+D: movimenta cÃ¢mera no eixo X para direita
+Z: movimenta cÃ¢mera no eixo Y para cima
+X: movimenta cÃ¢mera no eixo Y para baixo
 
 
-LEFT: Move a câmera no eixo X (esquerda)
-RIGHT: Move a câmera no eixo X (direita)
-UP: Move a câmera no eixo Y (cima)
-DOWN: Move a câmera no eixo Y (baixo)
-+: Move a câmera no eixo Z (frente)
--: Move a câmera no eixo Z (trás)
-
-F1 - exibe a malha
+=== Controles Mouse ===
+Scroll : escala do objeto (+) ou (-).
