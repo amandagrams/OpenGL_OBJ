@@ -7,5 +7,5 @@ uniform sampler2D texSampler1;
 
 void main()
 {
-	frag_color = texture(texSampler1, TexCoord);
+	frag_color = texture(texSampler1, TexCoord);   // aqui vai precisar ainda a iluminação
 }

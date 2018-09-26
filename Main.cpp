@@ -214,7 +214,7 @@ void glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 }
 
 //-----------------------------------------------------------------------------
-// Chamado pelo GLFW quando a roda do mouse é girada
+// Chamado pelo GLFW quando o scrool do mouse é girada
 //-----------------------------------------------------------------------------
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
 {

@@ -66,8 +66,8 @@ bool Mesh::loadOBJ(const std::string& filename)
 			}
 			else if (lineBuffer.substr(0, 2) == "f ")
 			{
-				int p1, p2, p3; //to store mesh index
-				int t1, t2, t3; //to store texture index
+				int p1, p2, p3; //armazena a mesh
+				int t1, t2, t3; //armazena a textura
 				int n1, n2, n3;
 				const char* face = lineBuffer.c_str();
 				int match = sscanf_s(face, "f %i/%i/%i %i/%i/%i %i/%i/%i",
