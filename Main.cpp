@@ -1,3 +1,8 @@
+/*
+Trabalho GA - Computação Gráfica
+Amanda Grams e Paula Knob
+*/
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -20,7 +25,7 @@ int gWindowHeight = 768;
 GLFWwindow* gWindow = NULL;
 bool gWireframe = false;
 
-
+//Configurações da Câmera
 FPSCamera fpsCamera(glm::vec3(0.0f, 3.0f, 10.0f));
 const double ZOOM_SENSITIVITY = -3.0;
 const float MOVE_SPEED = 3.0; // units per second
@@ -46,21 +51,22 @@ int main()
 		return -1;
 	}
 
+	//carrega os shaders (vertex e fragment) 
 	ShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
-	// Carregar mash e texturas
+	// Carregar mesh e texturas
 	const int numModels = 2;
 	Mesh mesh[numModels];
 	Texture2D texture[numModels];
 
+	// OBJ's que estão sendo carregados na cena
 	mesh[0].loadOBJ("models/cube.obj");
 	mesh[1].loadOBJ("models/floor.obj");
 	
-	
+	// carregando as imagens pra compôr as texturas
 	texture[0].loadTexture("textures/cube.jpg", true);
 	texture[1].loadTexture("textures/tile_floor.jpg", true);
-	
 	
 	// Posições do model
 	glm::vec3 modelPos[] = {
@@ -79,6 +85,7 @@ int main()
 	// Loop de renderização
 	while (!glfwWindowShouldClose(gWindow))
 	{
+		//exibição e cálculo do tempo decorrido
 		showFPS(gWindow);
 
 		double currentTime = glfwGetTime();
@@ -118,7 +125,7 @@ int main()
 			texture[i].unbind(0);	
 		}
 
-		// Swap front and back buffers
+		// Swap dos buffers
 		glfwSwapBuffers(gWindow);
 
 		lastTime = currentTime;
@@ -190,9 +197,11 @@ bool initOpenGL()
 //-----------------------------------------------------------------------------
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+	// esc fecha a janela
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	
+	// alterna a exibição da malha (polígonos sem preenchimento - GL_LINE) e com as texturas (GL_FILL)
 	if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
 	{
 		gWireframe = !gWireframe;
@@ -243,7 +252,6 @@ void update(double elapsedTime)
 	glfwSetCursorPos(gWindow, gWindowWidth / 2.0, gWindowHeight / 2.0);
 
 	// Movimento FPS da câmera
-
 	// Frente/trás
 	if (glfwGetKey(gWindow, GLFW_KEY_W) == GLFW_PRESS)
 		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getLook());
@@ -283,7 +291,7 @@ void showFPS(GLFWwindow* window)
 		double fps = (double)frameCount / elapsedSeconds;
 		double msPerFrame = 1000.0 / fps;
 
-		// C++ Definição titulo da janela
+		// Definição titulo da janela
 		std::ostringstream outs;
 		outs.precision(3);	// casas decimais
 		outs << std::fixed
