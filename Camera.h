@@ -14,15 +14,16 @@ public:
 	glm::mat4 getViewMatrix() const;
 
 	virtual void setPosition(const glm::vec3& position) {}
-	virtual void rotate(float yaw, float pitch) {}  // em graus
+	virtual void rotate(float yaw, float pitch) {}  // in degrees
 	virtual void move(const glm::vec3& offsetPos) {}
 
 	const glm::vec3& getLook() const;
 	const glm::vec3& getRight() const;
 	const glm::vec3& getUp() const;
+	const glm::vec3& getPosition() const;
 
-	float getFOV() const   { return mFOV; }
-	void setFOV(float fov) { mFOV = fov; }		// em graus
+	float getFOV() const { return mFOV; }
+	void setFOV(float fov) { mFOV = fov; }		// in degrees
 
 protected:
 	Camera();
@@ -41,7 +42,7 @@ protected:
 	float mPitch;
 
 	// Camera parameters
-	float mFOV; // em graus
+	float mFOV; // degrees
 };
 
 //--------------------------------------------------------------
@@ -51,17 +52,16 @@ class FPSCamera : public Camera
 {
 public:
 
-	FPSCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float yaw = glm::pi<float>(), float pitch = 0.0f); // (yaw) faces angulares iniciais -Z
+	FPSCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float yaw = glm::pi<float>(), float pitch = 0.0f); // (yaw) initial angle faces -Z
 
 	virtual void setPosition(const glm::vec3& position);
-	virtual void rotate(float yaw, float pitch);	// em graus
+	virtual void rotate(float yaw, float pitch);	// in degrees
 	virtual void move(const glm::vec3& offsetPos);
 
 private:
 
 	void updateCameraVectors();
 };
-
 
 //--------------------------------------------------------------
 // Orbit Camera Class
@@ -72,7 +72,7 @@ public:
 
 	OrbitCamera();
 
-	virtual void rotate(float yaw, float pitch);    // em graus
+	virtual void rotate(float yaw, float pitch);    // in degrees
 
 	// Camera Controls
 	void setLookAt(const glm::vec3& target);
@@ -86,3 +86,4 @@ private:
 	float mRadius;
 };
 #endif //CAMERA_H
+
