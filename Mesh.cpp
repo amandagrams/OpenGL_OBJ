@@ -3,6 +3,33 @@
 #include <sstream>
 #include <fstream>
 
+
+// ------------------------------------------------ -----------------------------
+// Dividir
+//
+// Params: s - string para dividir
+//		   t - string para dividir (ou seja, delimitador)
+//
+// Resultado: Divide a string de acordo com alguma substring e a retorna como um vetor.
+// ------------------------------------------------ -----------------------------
+std::vector<std::string> split(std::string s, std::string t)
+{
+	std::vector<std::string> res;
+	while (1)
+	{
+		int pos = s.find(t);
+		if (pos == -1)
+		{
+			res.push_back(s);
+			break;
+		}
+		res.push_back(s.substr(0, pos));
+		s = s.substr(pos + 1, s.size() - pos - 1);
+	}
+	return res;
+}
+
+
 //-----------------------------------------------------------------------------
 // Construtor
 //-----------------------------------------------------------------------------
@@ -22,18 +49,13 @@ Mesh::~Mesh()
 
 //-----------------------------------------------------------------------------
 // Carrega um modelo OBJ
-//
-// NOTE: This is not a complete, full featured OBJ loader.  It is greatly
-// simplified.
-// Assumptions!
-//  - O arquivo OBJ deve conter apenas triângulos
-//  - somente os comandos "v", "vt" e "f" são suportados
 //-----------------------------------------------------------------------------
 bool Mesh::loadOBJ(const std::string& filename)
 {
-	std::vector<unsigned int> vertexIndices, uvIndices;
+	std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
 	std::vector<glm::vec3> tempVertices;
 	std::vector<glm::vec2> tempUVs;
+	std::vector<glm::vec3> tempNormals;
 
 
 	if (filename.find(".obj") != std::string::npos)
@@ -50,59 +72,104 @@ bool Mesh::loadOBJ(const std::string& filename)
 		std::string lineBuffer;
 		while (std::getline(fin, lineBuffer))
 		{
-			if (lineBuffer.substr(0, 2) == "v ")
+			std::stringstream ss(lineBuffer);
+			std::string cmd;
+			ss >> cmd;
+
+			if (cmd == "v")
 			{
-				std::istringstream v(lineBuffer.substr(2));
 				glm::vec3 vertex;
-				v >> vertex.x; v >> vertex.y; v >> vertex.z;
+				int dim = 0;
+				while (dim < 3 && ss >> vertex[dim])
+					dim++;
+
 				tempVertices.push_back(vertex);
 			}
-			else if (lineBuffer.substr(0, 2) == "vt")
+			else if (cmd == "vt")
 			{
-				std::istringstream vt(lineBuffer.substr(3));
 				glm::vec2 uv;
-				vt >> uv.s; vt >> uv.t;
+				int dim = 0;
+				while (dim < 2 && ss >> uv[dim])
+					dim++;
+
 				tempUVs.push_back(uv);
 			}
-			else if (lineBuffer.substr(0, 2) == "f ")
+			else if (cmd == "vn")
 			{
-				int p1, p2, p3; //armazena a mesh
-				int t1, t2, t3; //armazena a textura
-				int n1, n2, n3;
-				const char* face = lineBuffer.c_str();
-				int match = sscanf_s(face, "f %i/%i/%i %i/%i/%i %i/%i/%i",
-					&p1, &t1, &n1,
-					&p2, &t2, &n2,
-					&p3, &t3, &n3);
-				if (match != 9)
-					std::cout << "Failed to parse OBJ file using our very simple OBJ loader" << std::endl;
+				glm::vec3 normal;
+				int dim = 0;
+				while (dim < 3 && ss >> normal[dim])
+					dim++;
+				normal = glm::normalize(normal);
+				tempNormals.push_back(normal);
+			}
+			else if (cmd == "f")
+			{
+				std::string faceData;
+				int vertexIndex, uvIndex, normalIndex;
 
-				
+				while (ss >> faceData)
+				{
+					std::vector<std::string> data = split(faceData, "/");
 
-				vertexIndices.push_back(p1);
-				vertexIndices.push_back(p2);
-				vertexIndices.push_back(p3);
+					if (data[0].size() > 0)
+					{
+						sscanf_s(data[0].c_str(), "%d", &vertexIndex);
+						vertexIndices.push_back(vertexIndex);
+					}
 
-				uvIndices.push_back(t1);
-				uvIndices.push_back(t2);
-				uvIndices.push_back(t3);
+					if (data.size() >= 1)
+					{
+						// É o formato da face v // vn? Se data [1] for uma string vazia,
+						// este vértice não tem coordenada de textura
+						if (data[1].size() > 0)
+						{
+							sscanf_s(data[1].c_str(), "%d", &uvIndex);
+							uvIndices.push_back(uvIndex);
+						}
+					}
+
+					if (data.size() >= 2)
+					{
+						// Este vértice tem um normal?
+						if (data[2].size() > 0)
+						{
+							sscanf_s(data[2].c_str(), "%d", &normalIndex);
+							normalIndices.push_back(normalIndex);
+						}
+					}
+				}
 			}
 		}
 
-		// Close the file
+		// fecha o arquivo
 		fin.close();
 
 
 		// Para cada vértice de cada triângulo
 		for (unsigned int i = 0; i < vertexIndices.size(); i++)
 		{
-			// Obtenha os atributos usando os índices
-			glm::vec3 vertex = tempVertices[vertexIndices[i] - 1];
-			glm::vec2 uv = tempUVs[uvIndices[i] - 1];
-
 			Vertex meshVertex;
-			meshVertex.position = vertex;
-			meshVertex.texCoords = uv;
+
+			// Obtém os atributos usando os índices
+
+			if (tempVertices.size() > 0)
+			{
+				glm::vec3 vertex = tempVertices[vertexIndices[i] - 1];
+				meshVertex.position = vertex;
+			}
+
+			if (tempNormals.size() > 0)
+			{
+				glm::vec3 normal = tempNormals[normalIndices[i] - 1];
+				meshVertex.normal = normal;
+			}
+
+			if (tempUVs.size() > 0)
+			{
+				glm::vec2 uv = tempUVs[uvIndices[i] - 1];
+				meshVertex.texCoords = uv;
+			}
 
 			mVertices.push_back(meshVertex);
 		}
@@ -113,11 +180,13 @@ bool Mesh::loadOBJ(const std::string& filename)
 		return (mLoaded = true);
 	}
 
+	//Se falhar...
 	return false;
 }
 
 //-----------------------------------------------------------------------------
 // Cria e inicializa o buffer de vértice e o objeto array de vértices
+// Deve ter objetos std :: vector válidos e não vazios de objetos Vertex.
 //-----------------------------------------------------------------------------
 void Mesh::initBuffers()
 {
@@ -129,12 +198,16 @@ void Mesh::initBuffers()
 	glBufferData(GL_ARRAY_BUFFER, mVertices.size() * sizeof(Vertex), &mVertices[0], GL_STATIC_DRAW);
 
 	// Posições dos vértices
-	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+
+	//Atributos da normal
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
 
 	// Coords da textura do vértice
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 
 	// desassocie para garantir que outro código não o altere em outro lugar
 	glBindVertexArray(0);
