@@ -1,6 +1,6 @@
 # OpenGL_OBJ 
   
-**Trabalho GA - Amanda Gramns e Paula Knob**
+**Trabalho GA - Amanda Grams e Paula Knob**
 
 
 **Controles Teclado**  
