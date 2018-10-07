@@ -87,4 +87,3 @@ private:
 	float mRadius;
 };
 #endif //CAMERA_H
-

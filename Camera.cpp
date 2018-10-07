@@ -1,91 +1,178 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#include "Camera.h"
+#include "glm/gtx/transform.hpp"
 
-#include "glm/glm.hpp"
-#include "glm/gtc/constants.hpp"
+// Default camera values
+const float DEF_FOV = 45.0f; // degrees
 
-
-//--------------------------------------------------------------
-// Abstract Camera Class
-//--------------------------------------------------------------
-class Camera
+//------------------------------------------------------------
+// Base Camera class constructor
+//------------------------------------------------------------
+Camera::Camera()
+	: mPosition(glm::vec3(0.0f, 0.0f, 0.0f)),
+	mTargetPos(glm::vec3(0.0f, 0.0f, 0.0f)),
+	mUp(glm::vec3(0.0f, 1.0f, 0.0f)),
+	mRight(1.0f, 0.0f, 0.0f),
+	WORLD_UP(0.0f, 1.0f, 0.0f),
+	mYaw(glm::pi<float>()),
+	mPitch(0.0f),
+	mFOV(DEF_FOV)
 {
-public:
-	glm::mat4 getViewMatrix() const;
+}
 
-	virtual void setPosition(const glm::vec3& position) {}
-	virtual void rotate(float yaw, float pitch) {}  // in degrees
-	virtual void move(const glm::vec3& offsetPos) {}
-
-	const glm::vec3& getLook() const;
-	const glm::vec3& getRight() const;
-	const glm::vec3& getUp() const;
-	const glm::vec3& getPosition() const;
-
-	float getFOV() const { return mFOV; }
-	void setFOV(float fov) { mFOV = fov; }		// in degrees
-
-protected:
-	Camera();
-
-	virtual void updateCameraVectors() {}
-
-	glm::vec3 mPosition;
-	glm::vec3 mTargetPos;
-	glm::vec3 mLook;
-	glm::vec3 mUp;
-	glm::vec3 mRight;
-	const glm::vec3 WORLD_UP;
-
-	// Euler Angles (in radians)
-	float mYaw;
-	float mPitch;
-
-	// Camera parameters
-	float mFOV; // degrees
-};
-
-
-//--------------------------------------------------------------
-// FPS Camera Class
-//--------------------------------------------------------------
-class FPSCamera : public Camera
+//------------------------------------------------------------
+// Base Camera - Returns view matrix
+//------------------------------------------------------------
+glm::mat4 Camera::getViewMatrix()const
 {
-public:
+	return glm::lookAt(mPosition, mTargetPos, mUp);
+}
 
-	FPSCamera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), float yaw = glm::pi<float>(), float pitch = 0.0f); // (yaw) initial angle faces -Z
-
-	virtual void setPosition(const glm::vec3& position);
-	virtual void rotate(float yaw, float pitch);	// in degrees
-	virtual void move(const glm::vec3& offsetPos);
-
-private:
-
-	void updateCameraVectors();
-};
-
-
-
-//--------------------------------------------------------------
-// Orbit Camera Class
-//--------------------------------------------------------------
-class OrbitCamera : public Camera
+//------------------------------------------------------------
+// Base Camera - Returns camera's local look vector
+//------------------------------------------------------------
+const glm::vec3& Camera::getLook() const
 {
-public:
+	return mLook;
+}
 
-	OrbitCamera();
+//------------------------------------------------------------
+// Base Camera - Returns camera's local right vector
+//------------------------------------------------------------
+const glm::vec3& Camera::getRight() const
+{
+	return mRight;
+}
 
-	virtual void rotate(float yaw, float pitch);    // in degrees
+//------------------------------------------------------------
+// Base Camera - Returns camera's local up vector
+//------------------------------------------------------------
+const glm::vec3& Camera::getUp() const
+{
+	return mUp;
+}
 
-	// Camera Controls
-	void setLookAt(const glm::vec3& target);
-	void setRadius(float radius);
+//------------------------------------------------------------
+// Base Camera - Returns camera's position
+//------------------------------------------------------------
+const glm::vec3& Camera::getPosition() const
+{
+	return mPosition;
+}
 
-private:
+//-----------------------------------------------------------------------------
+// FPSCamera - Constructor
+//-----------------------------------------------------------------------------
+FPSCamera::FPSCamera(glm::vec3 position, float yaw, float pitch)
+{
+	mPosition = position;
+	mYaw = yaw;
+	mPitch = pitch;
+}
 
-	void updateCameraVectors();
+//-----------------------------------------------------------------------------
+// FPSCamera - Sets the camera position in world space
+//-----------------------------------------------------------------------------
+void FPSCamera::setPosition(const glm::vec3& position)
+{
+	mPosition = position;
+}
 
-	// Camera parameters
-	float mRadius;
-};
-#endif //CAMERA_H
+//-----------------------------------------------------------------------------
+// FPSCamera - Sets the incremental position of the camera in world space
+//-----------------------------------------------------------------------------
+void FPSCamera::move(const glm::vec3& offsetPos)
+{
+	mPosition += offsetPos;
+	updateCameraVectors();
+}
+
+//-----------------------------------------------------------------------------
+// FPSCamera - Sets the incremental orientation of the camera
+//-----------------------------------------------------------------------------
+void FPSCamera::rotate(float yaw, float pitch)
+{
+	mYaw += glm::radians(yaw);
+	mPitch += glm::radians(pitch);
+
+	// Constrain the pitch
+	mPitch = glm::clamp(mPitch, -glm::pi<float>() / 2.0f + 0.1f, glm::pi<float>() / 2.0f - 0.1f);
+	updateCameraVectors();
+}
+
+//-----------------------------------------------------------------------------
+// FPSCamera - Calculates the front vector from the Camera's (updated) Euler Angles
+//-----------------------------------------------------------------------------
+void FPSCamera::updateCameraVectors()
+{
+	// Spherical to Cartesian coordinates
+	// https://en.wikipedia.org/wiki/Spherical_coordinate_system (NOTE: Our coordinate sys has Y up not Z)
+
+	// Calculate the view direction vector based on yaw and pitch angles (roll not considered)
+	// radius is 1 for normalized length
+	glm::vec3 look;
+	look.x = cosf(mPitch) * sinf(mYaw);
+	look.y = sinf(mPitch);
+	look.z = cosf(mPitch) * cosf(mYaw);
+
+	mLook = glm::normalize(look);
+
+	// Re-calculate the Right and Up vector.  For simplicity the Right vector will
+	// be assumed horizontal w.r.t. the world's Up vector.
+	mRight = glm::normalize(glm::cross(mLook, WORLD_UP));
+	mUp = glm::normalize(glm::cross(mRight, mLook));
+
+	mTargetPos = mPosition + mLook;
+}
+
+
+//------------------------------------------------------------
+// OrbitCamera - constructor
+//------------------------------------------------------------
+OrbitCamera::OrbitCamera()
+	: mRadius(10.0f)
+{}
+
+//------------------------------------------------------------
+// OrbitCamera - Sets the target to look at
+//------------------------------------------------------------
+void OrbitCamera::setLookAt(const glm::vec3& target)
+{
+	mTargetPos = target;
+}
+
+//------------------------------------------------------------
+// OrbitCamera - Sets the radius of camera to target distance
+//------------------------------------------------------------
+void OrbitCamera::setRadius(float radius)
+{
+	// Clamp the radius
+	mRadius = glm::clamp(radius, 2.0f, 80.0f);
+}
+
+//------------------------------------------------------------
+// OrbitCamera - Rotates the camera around the target look
+// at position given yaw and pitch in degrees.
+//------------------------------------------------------------
+void OrbitCamera::rotate(float yaw, float pitch)
+{
+	mYaw = glm::radians(yaw);
+	mPitch = glm::radians(pitch);
+
+	mPitch = glm::clamp(mPitch, -glm::pi<float>() / 2.0f + 0.1f, glm::pi<float>() / 2.0f - 0.1f);
+
+	// Update Front, Right and Up Vectors using the updated Euler angles
+	updateCameraVectors();
+}
+
+//------------------------------------------------------------
+// OrbitCamera - Calculates the front vector from the Camera's
+// (updated) Euler Angles
+//------------------------------------------------------------
+void OrbitCamera::updateCameraVectors()
+{
+	// Spherical to Cartesian coordinates
+	// https://en.wikipedia.org/wiki/Spherical_coordinate_system (NOTE: Our coordinate sys has Y up not Z)
+	mPosition.x = mTargetPos.x + mRadius * cosf(mPitch) * sinf(mYaw);
+	mPosition.y = mTargetPos.y + mRadius * sinf(mPitch);
+	mPosition.z = mTargetPos.z + mRadius * cosf(mPitch) * cosf(mYaw);
+}
