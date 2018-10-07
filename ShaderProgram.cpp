@@ -75,6 +75,8 @@ string ShaderProgram::fileToString(const string& filename)
 	std::stringstream ss;
 	std::ifstream file;
 
+	// Enable ifstream object exceptions
+	file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 	try
 	{
 		file.open(filename, std::ios::in);
@@ -89,7 +91,7 @@ string ShaderProgram::fileToString(const string& filename)
 	}
 	catch (std::exception ex)
 	{
-		std::cerr << "Error reading shader filename!" << std::endl;
+		std::cerr << "Error reading shader file " << filename << std::endl;
 	}
 
 	return ss.str();
@@ -189,6 +191,35 @@ void ShaderProgram::setUniform(const GLchar* name, const glm::mat4& m)
 	// transpose = False for opengl because column major
 	// value = the matrix to set for the uniform
 	glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
+}
+
+//-----------------------------------------------------------------------------
+// Sets a GLfloat shader uniform
+//-----------------------------------------------------------------------------
+void ShaderProgram::setUniform(const GLchar* name, const GLfloat f)
+{
+	GLint loc = getUniformLocation(name);
+	glUniform1f(loc, f);
+}
+
+//-----------------------------------------------------------------------------
+// Sets a GLint shader uniform
+//-----------------------------------------------------------------------------
+void ShaderProgram::setUniform(const GLchar* name, const GLint v)
+{
+	GLint loc = getUniformLocation(name);
+	glUniform1i(loc, v);
+}
+
+//-----------------------------------------------------------------------------
+// Sets a GLint shader uniform that is specific to a texture unit
+//-----------------------------------------------------------------------------
+void ShaderProgram::setUniformSampler(const GLchar* name, const GLint& slot)
+{
+	glActiveTexture(GL_TEXTURE0 + slot);
+
+	GLint loc = getUniformLocation(name);
+	glUniform1i(loc, slot);
 }
 
 //-----------------------------------------------------------------------------
