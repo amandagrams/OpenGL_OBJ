@@ -26,6 +26,8 @@
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\bulb.frag" />
+    <None Include="shaders\bulb.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B270698E-780C-44DB-8F96-F06CC79E2ECE}</ProjectGuid>
