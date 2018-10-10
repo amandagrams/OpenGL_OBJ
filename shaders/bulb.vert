@@ -8,6 +8,7 @@ uniform mat4 model;			// model matrix
 uniform mat4 view;			// view matrix
 uniform mat4 projection;	// projection matrix
 
+
 out vec2 TexCoord;
 
 void main()
