@@ -19,7 +19,7 @@ class Mesh
 {
 public:
 
-	 Mesh();
+	Mesh();
 	~Mesh();
 
 	bool loadOBJ(const std::string& filename);
