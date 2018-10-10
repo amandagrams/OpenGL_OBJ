@@ -24,11 +24,14 @@ int gWindowWidth = 1024;
 int gWindowHeight = 768;
 GLFWwindow* gWindow = NULL;
 bool gWireframe = false;
+glm::vec4 gClearColor(0.23f, 0.38f, 0.47f, 1.0f);
+const GLubyte* renderer;
+const GLubyte* version;
 
 //Configurações da Câmera
-FPSCamera fpsCamera(glm::vec3(0.0f, 3.0f, 10.0f));
+FPSCamera fpsCamera(glm::vec3(0.0f, 2.0f, 10.0f));
 const double ZOOM_SENSITIVITY = -3.0;
-const float MOVE_SPEED = 3.0; // units per second
+const float MOVE_SPEED = 5.0; // units per second
 const float MOUSE_SENSITIVITY = 0.1f;
 
 // Declaração de Funções
@@ -55,32 +58,58 @@ int main()
 	ShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
+	ShaderProgram lightShader;
+	lightShader.loadShaders("shaders/bulb.vert", "shaders/bulb.frag");
+
 	// Carregar mesh e texturas
-	const int numModels = 2;
+	const int numModels = 6;
 	Mesh mesh[numModels];
 	Texture2D texture[numModels];
 
 	// OBJ's que estão sendo carregados na cena
-	mesh[0].loadOBJ("models/cube.obj");
-	mesh[1].loadOBJ("models/floor.obj");
+	mesh[0].loadOBJ("models/crate.obj");
+	mesh[1].loadOBJ("models/woodcrate.obj");
+	mesh[2].loadOBJ("models/robot.obj");
+	mesh[3].loadOBJ("models/floor.obj");
+	mesh[4].loadOBJ("models/bowling_pin.obj");
+	mesh[5].loadOBJ("models/bunny.obj");
 	
 	// carregando as imagens pra compôr as texturas
-	texture[0].loadTexture("textures/cube.jpg", true);
-	texture[1].loadTexture("textures/tile_floor.jpg", true);
+	texture[0].loadTexture("textures/crate.jpg", true);
+	texture[1].loadTexture("textures/woodcrate_diffuse.jpg", true);
+	texture[2].loadTexture("textures/robot_diffuse.jpg", true);
+	texture[3].loadTexture("textures/tile_floor.jpg", true);
+	texture[4].loadTexture("textures/AMF.tga", true);
+	texture[5].loadTexture("textures/bunny_diffuse.jpg", true);
+	
+
+	Mesh lightMesh;
+	lightMesh.loadOBJ("models/light.obj");
 	
 	// Posições do model
 	glm::vec3 modelPos[] = {
-		glm::vec3(0.0f, 1.0f, 0.0f),	// cubo	
-		glm::vec3(0.0f, 0.0f, 0.0f)		// chão
+		glm::vec3(-3.5f, 0.0f, 0.0f),	// crate1
+		glm::vec3(3.5f, 0.0f, 0.0f),	// crate2
+		glm::vec3(0.0f, 0.0f, -2.0f),	// robot
+		glm::vec3(0.0f, 0.0f, 0.0f),	// floor
+		glm::vec3(0.0f, 0.0f, 2.0f),	// pin
+		glm::vec3(-2.0f, 0.0f, 2.0f)	// bunny
+		
 	};
 
 	// Escala do model
 	glm::vec3 modelScale[] = {
-		glm::vec3(1.0f, 1.0f, 1.0f),	// cubo	
-		glm::vec3(10.0f, 1.0f, 10.0f)	// chão
+		glm::vec3(1.0f, 1.0f, 1.0f),	// crate1
+		glm::vec3(1.0f, 1.0f, 1.0f),	// crate2
+		glm::vec3(1.0f, 1.0f, 1.0f),	// robot
+		glm::vec3(10.0f, 1.0f, 10.0f),	// floor
+		glm::vec3(0.1f, 0.1f, 0.1f),	// pin
+		glm::vec3(0.7f, 0.7f, 0.7f)		// bunny
+		
 	};
 
 	double lastTime = glfwGetTime();
+	float angle = 0.0f;
 
 	// Loop de renderização
 	while (!glfwWindowShouldClose(gWindow))
@@ -106,31 +135,71 @@ int main()
 		// Cria a matriz de projeção
 		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 200.0f);
 
+
+		// Atualiza posição de visualização da camera
+		glm::vec3 viewPos;
+		viewPos.x = fpsCamera.getPosition().x;
+		viewPos.y = fpsCamera.getPosition().y;
+		viewPos.z = fpsCamera.getPosition().z;
+
+		// Luz phong
+		glm::vec3 lightPos(0.0f, 1.0f, 10.0f);
+		glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+
+
+		// Movimento luz
+		angle += (float)deltaTime * 50.0f;
+		lightPos.x = 8.0f * sinf(glm::radians(angle));
+
 		// Deve ser chamado ANTES de configurar uniformes porque a configuração de uniformes é feita
 		//no programa de shader atualmente ativo.
 		shaderProgram.use();
 
-		// Passa as matrizes pro shader
+
+		// Luz simples
 		shaderProgram.setUniform("view", view);
 		shaderProgram.setUniform("projection", projection);
+		shaderProgram.setUniform("viewPos", viewPos);
+		shaderProgram.setUniform("light.position", lightPos);
+		shaderProgram.setUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+		shaderProgram.setUniform("light.diffuse", lightColor);
+		shaderProgram.setUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
 
-		// Renderiza a cena
+
+		// Renderiza cena
 		for (int i = 0; i < numModels; i++)
 		{
 			model = glm::translate(glm::mat4(), modelPos[i]) * glm::scale(glm::mat4(), modelScale[i]);
 			shaderProgram.setUniform("model", model);
 
-			texture[i].bind(0);		// Define a textura antes de desenhar.
-			mesh[i].draw();			// Renderiza o OBJ no mesh
-			texture[i].unbind(0);	
+			// Set material properties
+			shaderProgram.setUniform("material.ambient", glm::vec3(0.1f, 0.1f, 0.1f));
+			shaderProgram.setUniformSampler("material.diffuseMap", 0);
+			shaderProgram.setUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+			shaderProgram.setUniform("material.shininess", 32.0f);
+
+			texture[i].bind(0);		// Seta a textura antes de desenhar
+			mesh[i].draw();			// Renderiza o objeto na malha
+			texture[i].unbind(0);
+
 		}
 
-		// Swap dos buffers
+		// Render the light bulb geometry
+		model = glm::translate(glm::mat4(), lightPos);
+		lightShader.use();
+		lightShader.setUniform("lightColor", lightColor);
+		lightShader.setUniform("model", model);
+		lightShader.setUniform("view", view);
+		lightShader.setUniform("projection", projection);
+		lightMesh.draw();
+
+		// Swap front and back buffers
 		glfwSwapBuffers(gWindow);
 
 		lastTime = currentTime;
-	}
-
+		}
+	
+				
 	glfwTerminate();
 
 	return 0;
@@ -148,6 +217,8 @@ bool initOpenGL()
 		std::cerr << "GLFW initialization failed" << std::endl;
 		return false;
 	}
+
+	
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -174,18 +245,28 @@ bool initOpenGL()
 		return false;
 	}
 
+	/* get version info */
+	renderer = glGetString(GL_RENDERER); /* get renderer string */
+	version = glGetString(GL_VERSION); /* version as a string */
+	printf("Renderer: %s\n", renderer);
+	printf("OpenGL version supported %s\n", version);
+
+	/* tell GL to only draw onto a pixel if the shape is closer to the viewer */
+	glEnable(GL_DEPTH_TEST); /* enable depth-testing */
+	glDepthFunc(GL_LESS);/*depth-testing interprets a smaller value as "closer"*/
+
 	// Set the required callback functions
 	glfwSetKeyCallback(gWindow, glfw_onKey);
 	glfwSetFramebufferSizeCallback(gWindow, glfw_onFramebufferSize);
 	glfwSetScrollCallback(gWindow, glfw_onMouseScroll);
 
-	// Mouse
+	// Hides and grabs cursor, unlimited movement
 	glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(gWindow, gWindowWidth / 2.0, gWindowHeight / 2.0);
 
-	glClearColor(0.23f, 0.38f, 0.47f, 1.0f);
+	glClearColor(gClearColor.r, gClearColor.g, gClearColor.b, gClearColor.a);
 
-	// Dimensão viewport
+	// Define the viewport dimensions
 	glViewport(0, 0, gWindowWidth, gWindowHeight);
 	glEnable(GL_DEPTH_TEST);
 
@@ -210,6 +291,7 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+
 }
 
 //-----------------------------------------------------------------------------
@@ -266,9 +348,9 @@ void update(double elapsedTime)
 
 	// Up/down
 	if (glfwGetKey(gWindow, GLFW_KEY_Z) == GLFW_PRESS)
-		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * fpsCamera.getUp());
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * glm::vec3(0.0f, 1.0f, 0.0f));
 	else if (glfwGetKey(gWindow, GLFW_KEY_X) == GLFW_PRESS)
-		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getUp());
+		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 //-----------------------------------------------------------------------------
@@ -300,7 +382,7 @@ void showFPS(GLFWwindow* window)
 			<< "Frame Time: " << msPerFrame << " (ms)";
 		glfwSetWindowTitle(window, outs.str().c_str());
 
-		// Redefinir para a próxima média.
+		// Reset for next average.
 		frameCount = 0;
 	}
 
